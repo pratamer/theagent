@@ -25,13 +25,13 @@ class AgentAPI {
 
     log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        switch(type) {
+        switch (type) {
             case 'success':
                 console.log(`[${timestamp}] [*] ${msg}`.green);
                 break;
             case 'custom':
                 console.log(`[${timestamp}] [*] ${msg}`);
-                break;        
+                break;
             case 'error':
                 console.log(`[${timestamp}] [!] ${msg}`.red);
                 break;
@@ -63,20 +63,20 @@ class AgentAPI {
             }
             return 'Unknown';
         } catch (error) {
-            this.log(`Could not read data: ${error.message}`, 'error');
+            this.log(`Failed to read data: ${error.message}`, 'error');
             return 'Unknown';
         }
     }
 
     async getMe(authorization) {
         const url = `${this.baseURL}/getMe`;
-        const payload = {"referrer_id": 376905749};
-        
+        const payload = { "referrer_id": 376905749 };
+
         try {
             const response = await axios.post(url, payload, { headers: this.headers(authorization) });
             return response.data;
         } catch (error) {
-            this.log(`Error getting user information: ${error.message}`, 'error');
+            this.log(`Error fetching user information: ${error.message}`, 'error');
             throw error;
         }
     }
@@ -84,11 +84,11 @@ class AgentAPI {
     async completeTask(authorization, taskType, taskTitle, currentCount = 0, maxCount = 1) {
         const url = `${this.baseURL}/completeTask`;
         const payload = { "type": taskType };
-        
+
         try {
             const response = await axios.post(url, payload, { headers: this.headers(authorization) });
             const result = response.data.result;
-            this.log(`Completed task ${taskTitle.yellow} ${currentCount + 1}/${maxCount} successfully | Reward ${result.reward.toString().magenta} | Balance ${result.balance.toString().magenta}`, 'custom');
+            this.log(`Task ${taskTitle.yellow} ${currentCount + 1}/${maxCount} completed successfully | Reward: ${result.reward.toString().magenta} | Balance: ${result.balance.toString().magenta}`, 'custom');
             return result;
         } catch (error) {
             this.log(`Failed to complete task ${taskTitle}: ${error.message}`, 'error');
@@ -97,12 +97,12 @@ class AgentAPI {
 
     async processTasks(authorization, tasks) {
         const unclaimedTasks = tasks.filter(task => !task.is_claimed && !['nomis2', 'boost', 'invite_3_friends'].includes(task.type));
-        
+
         if (unclaimedTasks.length === 0) {
-            this.log("No uncompleted tasks remaining.", 'warning');
+            this.log("No unfinished tasks remaining.", 'warning');
             return;
         }
-    
+
         for (const task of unclaimedTasks) {
             if (task.max_count) {
                 const remainingCount = task.max_count - (task.count || 0);
@@ -114,20 +114,20 @@ class AgentAPI {
                 await this.completeTask(authorization, task.type, task.title);
             }
         }
-    }    
+    }
 
     async spinWheel(authorization) {
         const url = `${this.baseURL}/wheel/spin`;
         const payload = {};
-        
+
         try {
             const response = await axios.post(url, payload, { headers: this.headers(authorization) });
             const result = response.data.result;
             this.log(`Spin successful: received ${result.reward}`, 'success');
-            this.log(`* Balance : ${result.balance}`);
-            this.log(`* Toncoin : ${result.toncoin}`);
-            this.log(`* Notcoin : ${result.notcoin}`);
-            this.log(`* Tickets : ${result.tickets}`);
+            this.log(`* Balance: ${result.balance}`);
+            this.log(`* Toncoin: ${result.toncoin}`);
+            this.log(`* Notcoin: ${result.notcoin}`);
+            this.log(`* Tickets: ${result.tickets}`);
             return result;
         } catch (error) {
             this.log(`Error during spin: ${error.message}`, 'error');
@@ -141,15 +141,14 @@ class AgentAPI {
             try {
                 const result = await this.spinWheel(authorization);
                 tickets = result.tickets;
-                await new Promise(resolve => setTimeout(resolve, 1000));
             } catch (error) {
-                this.log(`Stopped spinning due to error: ${error.message}`, 'error');
-                break;
+                this.log(`Error during spin: ${error.message}`, 'error');
             }
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        this.log('All tickets used or an error occurred', 'warning');
+        this.log('All tickets used.', 'warning');
     }
-    
+
     async main() {
         const dataFile = 'data.txt';
         const data = fs.readFileSync(dataFile, 'utf8')
@@ -167,7 +166,7 @@ class AgentAPI {
                     const userInfo = await this.getMe(authorization);
                     this.log(`Initial Balance: ${userInfo.result.balance.toString().white}`, 'success');
                     this.log(`Tickets: ${userInfo.result.tickets.toString().white}`, 'success');
-                    
+
                     await this.processTasks(authorization, userInfo.result.tasks);
 
                     if (userInfo.result.tickets > 0) {

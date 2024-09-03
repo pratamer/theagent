@@ -80,7 +80,7 @@ class AgentAPI {
                 throw new Error(`Cannot check proxy IP. Status code: ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Error checking proxy IP: ${error.message}`);
+            throw new Error(`Error when checking proxy IP: ${error.message}`);
         }
     }
 
@@ -96,7 +96,7 @@ class AgentAPI {
             });
             return response.data;
         } catch (error) {
-            this.log(`Error fetching user information: ${error.message}`, 'error');
+            this.log(`Error getting user information: ${error.message}`, 'error');
             throw error;
         }
     }
@@ -123,7 +123,7 @@ class AgentAPI {
         const unclaimedTasks = tasks.filter(task => !task.is_claimed && !['nomis2', 'boost', 'invite_3_friends'].includes(task.type));
         
         if (unclaimedTasks.length === 0) {
-            this.log("No incomplete tasks remaining.", 'warning');
+            this.log("No uncompleted tasks left.", 'warning');
             return;
         }
     
@@ -158,7 +158,7 @@ class AgentAPI {
             this.log(`* Tickets : ${result.tickets}`);
             return result;
         } catch (error) {
-            this.log(`Error spinning: ${error.message}`, 'error');
+            this.log(`Spin error: ${error.message}`, 'error');
             throw error;
         }
     }
@@ -169,14 +169,13 @@ class AgentAPI {
             try {
                 const result = await this.spinWheel(authorization, proxy);
                 tickets = result.tickets;
-                await new Promise(resolve => setTimeout(resolve, 1000));
             } catch (error) {
-                this.log(`Stopped spinning due to error: ${error.message}`, 'error');
-                break;
+                this.log(`Spin error: ${error.message}`, 'error');
             }
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        this.log('Used all tickets or encountered an error', 'warning');
-    }
+        this.log('All tickets used.', 'warning');
+    }    
     
     async main() {
         const dataFile = 'data.txt';
